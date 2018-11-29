@@ -7,15 +7,65 @@
 
 <h1>@ViewData["Title"]</h1>
 
-<h2>Assumptions</h2>
+<h4>Assumptions</h4>
 <ul>
     <li>Original Price: @Model.OriginalPrice.FormatCurrency()</li>
     <li>Current Price: @Model.CurrentPrice.FormatCurrency()</li>
     <li>Share Count: @Model.ShareCount</li>
 </ul>
 
-<h2>Original Value: @Model.OriginalValue.FormatCurrency()</h2>
-<h2>Current Value: @Model.CurrentValue.FormatCurrency()</h2>
-<h2><strong>Difference: @Model.Difference.FormatCurrency()</strong></h2>
+<h4>
+    Original Value: @Model.OriginalValue.FormatCurrency()<br />
+    Current Value: @Model.CurrentValue.FormatCurrency()<br />
+    <strong>Difference in Value: @Model.Difference.FormatCurrency()</strong>
+</h4>
 
-<p>Values current as of @DateTime.Now.FormatTimestamp()</p>
+<h3>History</h3>
+
+<canvas id="historyChart" width="100%" height="35%"></canvas>
+
+@section Scripts
+    {
+    <script>
+
+        const context = document.getElementById("historyChart").getContext('2d');
+        const historyChart = new Chart(context,
+            {
+                type: 'line',
+                data: {
+                    labels: GetData().map(i => i.time),
+                    datasets: [
+                        {
+                            label: "Difference in Value",
+                            data: GetData().map(i => i.valueDifference),
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    elements: {
+                        line: {
+                            tension: 0
+                        }
+                    }
+                }
+            });
+
+        function GetData() {
+            return [
+                @foreach (var price in Model.PriceHistory)
+                {
+                    <text>
+                        {
+                            time: "@price.Time.FormatTimestamp()",
+                            price: @price.Price,
+                            valueDifference: @Model.ValueDifference(price)
+                            // ReSharper disable once ElidedTrailingElement
+                        },
+                    </text>
+                }
+            ];
+        }
+
+    </script>
+}

@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using Utilities.Extensions
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -42,7 +43,11 @@
         @RenderBody()
         <hr />
         <footer>
-            <p>&copy; @DateTime.Today.Year - Lexor Consulting Ltd.</p>
+            <p>
+                Values current as of @DateTime.Now.FormatTimestamp()
+                <br/>
+                &copy; @DateTime.Today.Year - Lexor Consulting Ltd.
+            </p>
         </footer>
     </div>
 
@@ -66,6 +71,8 @@
         </script>
         <script src="~/js/site.min.js" asp-append-version="true"></script>
     </environment>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
 
     @RenderSection("Scripts", required: false)
 </body>
