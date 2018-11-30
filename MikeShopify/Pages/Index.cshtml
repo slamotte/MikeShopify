@@ -9,8 +9,8 @@
 
 <h4>Assumptions</h4>
 <ul>
-    <li>Original Price: @Model.OriginalPrice.FormatCurrency()</li>
-    <li>Current Price: @Model.CurrentPrice.FormatCurrency()</li>
+    <li>Original Share Price: @Model.OriginalPrice.FormatCurrency()</li>
+    <li>Current Share Price: @Model.CurrentPrice.FormatCurrency()</li>
     <li>Share Count: @Model.ShareCount</li>
 </ul>
 
@@ -28,16 +28,17 @@
     {
     <script>
 
-        const context = document.getElementById("historyChart").getContext('2d');
-        const historyChart = new Chart(context,
+        const data = GetData();
+        const historyContext = document.getElementById("historyChart").getContext('2d');
+        const historyChart = new Chart(historyContext,
             {
                 type: 'line',
                 data: {
-                    labels: GetData().map(i => i.time),
+                    labels: data.map(i => i.time),
                     datasets: [
                         {
                             label: "Difference in Value",
-                            data: GetData().map(i => i.valueDifference),
+                            data: data.map(i => i.valueDifference),
                             borderWidth: 1
                         }
                     ]
@@ -47,6 +48,28 @@
                         line: {
                             tension: 0
                         }
+                    },
+                    tooltips: {
+                        callbacks: {
+                            afterLabel: function(tooltipItem) {
+                                const price = data[tooltipItem["index"]].price;
+                                return `Share Price: $${Number(price).format(2)}`;
+                                },
+                                label: function(tooltipItem) {
+                                    return `Difference: $${Number(tooltipItem.yLabel).format(2)}`;
+                            }
+                        }
+                    },
+                    scales: {
+                        yAxes: [
+                            {
+                                ticks: {
+                                    callback: function(label) {
+                                        return `$${Number(label).format()}`;
+                                    }
+                                }
+                            }
+                        ]
                     }
                 }
             });
@@ -58,8 +81,8 @@
                     <text>
                         {
                             time: "@price.Time.FormatTimestamp()",
-                            price: @price.Price,
-                            valueDifference: @Model.ValueDifference(price)
+                            price: @Math.Round(price.Price, 2),
+                            valueDifference: @Math.Round(Model.ValueDifference(price), 2)
                             // ReSharper disable once ElidedTrailingElement
                         },
                     </text>

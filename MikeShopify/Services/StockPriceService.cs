@@ -13,9 +13,10 @@ namespace MikeShopify.Services
     public class StockPriceService
     {
         private const string ApiUrlBase = "https://www.alphavantage.co/query?function=";
-        private const string TimeFrequency = "60min";
+        private const string TimeFrequency = "30min";
 
-        private readonly string HistoryElementName = $"Time Series ({TimeFrequency})";
+        private readonly string _historyElementName = $"Time Series ({TimeFrequency})";
+        private readonly DateTime _earliestHistoryTime = DateTime.Now - TimeSpan.FromDays(180);
 
         private string CurrentUrl { get; }
         private string HistoryUrl { get; }
@@ -24,7 +25,7 @@ namespace MikeShopify.Services
         {
             var apiKeyParam = $"&apikey={settings.Value.StockPriceApiKey}";
             CurrentUrl = $"{ApiUrlBase}GLOBAL_QUOTE{apiKeyParam}";
-            HistoryUrl = $"{ApiUrlBase}TIME_SERIES_INTRADAY&interval={TimeFrequency}{apiKeyParam}";
+            HistoryUrl = $"{ApiUrlBase}TIME_SERIES_INTRADAY&outputsize=full&interval={TimeFrequency}{apiKeyParam}";
         }
 
         public async Task<decimal?> GetCurrentAsync(string stockSymbol)
@@ -49,13 +50,14 @@ namespace MikeShopify.Services
 
             var json = await response.Content.ReadAsStringAsync();
             var jsonObj = JObject.Parse(json);
-            var history = jsonObj[HistoryElementName].ToArray();
+            var history = jsonObj[_historyElementName].ToArray();
             var result = history
                 .Select(i => new PriceHistory
                 {
                     Time = DateTime.Parse(((JProperty)i).Name),
                     Price = i.First().Value<decimal>("4. close")
                 })
+                .Where(i => i.Time > _earliestHistoryTime)
                 .OrderBy(i => i.Time);
             return result;
         }
