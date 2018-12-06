@@ -17,7 +17,7 @@
 <h4>
     Original Value: @Model.OriginalValue.FormatCurrency()<br />
     Current Value: @Model.CurrentValue.FormatCurrency()<br />
-    <strong>Difference in Value: @Model.Difference.FormatCurrency()</strong>
+    <strong>Difference in Value: @Model.Difference.FormatCurrency() (@await Model.FormatCadAsync(Model.Difference, DateTime.Now))</strong>
 </h4>
 
 <h3>History</h3>
@@ -27,6 +27,10 @@
 @section Scripts
     {
     <script>
+
+        Chart.Tooltip.positioners.cursor = function(chartElements, coordinates) {
+            return coordinates;
+        };
 
         const data = GetData();
         const historyContext = document.getElementById("historyChart").getContext('2d');
@@ -45,18 +49,25 @@
                 },
                 options: {
                     elements: {
+                        point: {
+                            radius: 0
+                        },
                         line: {
                             tension: 0
                         }
                     },
                     tooltips: {
+                        mode: "index",
+                        position: "cursor",
+                        intersect: false,
                         callbacks: {
                             afterLabel: function(tooltipItem) {
                                 const price = data[tooltipItem["index"]].price;
                                 return `Share Price: $${Number(price).format(2)}`;
-                                },
-                                label: function(tooltipItem) {
-                                    return `Difference: $${Number(tooltipItem.yLabel).format(2)}`;
+                            },
+                            label: function(tooltipItem) {
+                                const index = tooltipItem["index"];
+                                return `Difference: $${Number(tooltipItem.yLabel).format(2)} ($${Number(data[index].valueDifferenceCad).format(2)} CAD)`;
                             }
                         }
                     },
@@ -82,7 +93,9 @@
                         {
                             time: "@price.Time.FormatTimestamp()",
                             price: @Math.Round(price.Price, 2),
-                            valueDifference: @Math.Round(Model.ValueDifference(price), 2)
+                            valueDifference: @Math.Round(Model.ValueDifference(price), 2),
+                            valueDifferenceCad:
+                                @Math.Round(await Model.AsCadAsync(Model.ValueDifference(price), price.Time), 2)
                             // ReSharper disable once ElidedTrailingElement
                         },
                     </text>

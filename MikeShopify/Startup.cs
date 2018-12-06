@@ -36,7 +36,8 @@ namespace MikeShopify
             services.Configure<AppSettings>(Configuration);
 
             // Register services
-            services.AddScoped<StockPriceService, StockPriceService>();
+            services.AddScoped<IForeignExchangeRates, ForeignExchangeRates>();
+            services.AddScoped<IStockPriceService, StockPriceService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

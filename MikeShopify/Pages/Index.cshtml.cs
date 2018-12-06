@@ -4,8 +4,10 @@ using Microsoft.Extensions.Options;
 using MikeShopify.Pages.Models;
 using MikeShopify.Services;
 using MikeShopify.Settings;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Utilities.Extensions;
 
 namespace MikeShopify.Pages
 {
@@ -25,23 +27,37 @@ namespace MikeShopify.Pages
             price.Price * ShareCount - OriginalValue;
 
         private AppSettings Settings { get; }
-        private StockPriceService Service { get; }
+        private IStockPriceService StockPriceService { get; }
+        private IForeignExchangeRates ForeignExchangeRates { get; }
 
-        public IndexModel(IOptions<AppSettings> settings, StockPriceService service)
+        public async Task<decimal> AsCadAsync(decimal amount, DateTime time) =>
+            amount * await ForeignExchangeRates.GetRateAsync(time);
+
+        public async Task<string> FormatCadAsync(decimal amount, DateTime time)
         {
-            Settings = settings.Value;
-            Service = service;
+            var cad = amount * await ForeignExchangeRates.GetRateAsync(time);
+            return $"{cad.FormatCurrency()} CAD";
         }
 
-        public async Task<IActionResult> OnGet()
+        public IndexModel(
+            IOptions<AppSettings> settings,
+            IStockPriceService stockPriceService,
+            IForeignExchangeRates foreignExchangeRates)
+        {
+            Settings = settings.Value;
+            StockPriceService = stockPriceService;
+            ForeignExchangeRates = foreignExchangeRates;
+        }
+
+        public async Task<IActionResult> OnGetAsync()
         {
             OriginalPrice = Settings.OriginalStockPrice;
             ShareCount = Settings.ShareCount;
-            var price = await Service.GetCurrentAsync(Settings.StockSymbol);
+            var price = await StockPriceService.GetCurrentPriceAsync(Settings.StockSymbol);
             if (price == null) return NotFound();
             CurrentPrice = price.Value;
 
-            PriceHistory = await Service.GetHistoryAsync(Settings.StockSymbol);
+            PriceHistory = await StockPriceService.GetPriceHistoryAsync(Settings.StockSymbol);
             if (PriceHistory == null) return NotFound();
 
             return Page();
